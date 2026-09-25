@@ -53,6 +53,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_DEMO_MODE=false
 ```
 
+Jika dashboard Supabase Anda masih menampilkan **anon public key** dan bukan **publishable key**, Anda boleh memakai `NEXT_PUBLIC_SUPABASE_ANON_KEY` sebagai pengganti `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+
 `SUPABASE_SECRET_KEY` hanya boleh dipakai di server. Jangan mengubah namanya menjadi `NEXT_PUBLIC_*` dan jangan commit `.env.local`.
 
 ## Setup Groq API (opsional, free tier bila tersedia)
