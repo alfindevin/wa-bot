@@ -1,8 +1,9 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { getMissingSupabasePublicEnv, supabasePublicKey, supabaseUrl } from "@/lib/env";
 
 export function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) throw new Error("Supabase belum dikonfigurasi.");
-  return createBrowserClient(url, key);
+  if (!supabaseUrl || !supabasePublicKey) {
+    throw new Error(`Supabase belum dikonfigurasi. Env yang belum terbaca: ${getMissingSupabasePublicEnv()}.`);
+  }
+  return createBrowserClient(supabaseUrl, supabasePublicKey);
 }
