@@ -23,7 +23,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   if (!isDemoMode) {
     const supabase = await createClient();
-    const { data: tenantData } = await supabase.from("tenants").select("id,name,slug,business_profile,welcome_message,brand_color,monthly_limit,plan,bot_name,bot_tone,handoff_whatsapp,lead_capture_enabled,quick_questions").order("created_at").limit(1).single();
+    const { data: tenantData } = await supabase.from("tenants").select("id,name,slug,business_profile,welcome_message,brand_color,monthly_limit,plan,bot_name,bot_tone,handoff_whatsapp,lead_capture_enabled,quick_questions,allow_public_widget,billing_cycle_start,channel_config").order("created_at").limit(1).single();
     if (!tenantData) notFound(); tenant = tenantData;
     const month = new Date().toISOString().slice(0,7)+"-01";
     const [{data: conversationData},{data: messageData},{data: usageData}] = await Promise.all([

@@ -31,8 +31,18 @@ export async function updateBusiness(formData: FormData) {
     handoff_whatsapp: whatsapp,
     lead_capture_enabled: formData.get("lead_capture_enabled") === "on",
     quick_questions: quickQuestions,
+    allow_public_widget: formData.get("allow_public_widget") === "on",
   }).eq("id", id);
   if (error) throw error; done();
+
+  await supabase.from("tenant_channels").upsert({
+    tenant_id: id,
+    channel: "web",
+    status: formData.get("allow_public_widget") === "on" ? "active" : "disabled",
+    label: "Web Chat",
+    settings: { public_widget: formData.get("allow_public_widget") === "on" },
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "tenant_id,channel" });
 }
 
 export async function addFaq(formData: FormData) {

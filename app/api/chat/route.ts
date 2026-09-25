@@ -8,6 +8,8 @@ import type { BusinessContext, ChatMessage } from "@/lib/types";
 
 export const runtime = "nodejs";
 
+const handoffPattern = /\b(admin|manusia|cs|customer service|operator|whatsapp|wa|hubungi|kontak|telepon|telpon|bicara)\b/i;
+
 export async function POST(request: NextRequest) {
   try {
     const contentLength = Number(request.headers.get("content-length") || 0);
@@ -26,8 +28,9 @@ export async function POST(request: NextRequest) {
     }
 
     const db = createAdminClient();
-    const { data: tenant } = await db.from("tenants").select("id,name,slug,business_profile,welcome_message,brand_color,monthly_limit,plan,bot_name,bot_tone,handoff_whatsapp,lead_capture_enabled,quick_questions").eq("slug", slug).eq("is_active", true).single();
+    const { data: tenant } = await db.from("tenants").select("id,name,slug,business_profile,welcome_message,brand_color,monthly_limit,plan,bot_name,bot_tone,handoff_whatsapp,lead_capture_enabled,quick_questions,allow_public_widget,billing_cycle_start,channel_config").eq("slug", slug).eq("is_active", true).single();
     if (!tenant) return NextResponse.json({ error: "Chatbot tidak ditemukan." }, { status: 404 });
+    if (tenant.allow_public_widget === false) return NextResponse.json({ error: "Chatbot publik sedang dinonaktifkan." }, { status: 403 });
     const forwardedIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
     const visitorKey = createHash("sha256").update(`${tenant.id}:${forwardedIp}:${sessionToken}`).digest("hex");
     const { data: rateResult, error: rateError } = await db.rpc("check_chat_rate_limit", { tenant_uuid: tenant.id, visitor_key_hash: visitorKey, max_requests: 20, window_seconds: 60 });
@@ -48,6 +51,18 @@ export async function POST(request: NextRequest) {
     const { data: conversation, error: conversationError } = await db.from("conversations").upsert({ tenant_id: tenant.id, session_token: sessionToken, channel: "web", visitor_name: visitorName, visitor_email: visitorEmail, visitor_phone: visitorPhone, updated_at: new Date().toISOString() }, { onConflict: "tenant_id,session_token" }).select("id").single();
     if (conversationError) throw conversationError;
     await db.from("messages").insert({ tenant_id: tenant.id, conversation_id: conversation.id, role: "user", content });
+    if (visitorEmail || visitorPhone) {
+      await db.from("conversation_events").insert({ tenant_id: tenant.id, conversation_id: conversation.id, event_type: "lead_captured", metadata: { email: Boolean(visitorEmail), phone: Boolean(visitorPhone) } });
+    }
+    if (handoffPattern.test(content)) {
+      const reply = tenant.handoff_whatsapp
+        ? `Baik, saya tandai percakapan ini agar admin bisa menindaklanjuti. Anda juga bisa langsung WhatsApp admin di https://wa.me/${tenant.handoff_whatsapp}`
+        : "Baik, saya tandai percakapan ini agar admin bisa menindaklanjuti. Nomor WhatsApp admin belum disetel di dashboard.";
+      await db.from("conversations").update({ status: "needs_human" }).eq("id", conversation.id);
+      await db.from("conversation_events").insert({ tenant_id: tenant.id, conversation_id: conversation.id, event_type: "handoff_requested", metadata: { source: "keyword" } });
+      await db.from("messages").insert({ tenant_id: tenant.id, conversation_id: conversation.id, role: "assistant", content: reply, metadata: { provider: "handoff-rule" } });
+      return NextResponse.json({ reply, provider: "handoff-rule", remaining: usage.remaining });
+    }
     const [{ data: faqs }, { data: products }, { data: knowledge }, { data: history }] = await Promise.all([
       db.from("faqs").select("id,question,answer,sort_order").eq("tenant_id", tenant.id).order("sort_order"),
       db.from("products").select("id,name,description,price,price_label,is_active").eq("tenant_id", tenant.id).eq("is_active", true),
@@ -60,7 +75,10 @@ export async function POST(request: NextRequest) {
     try { generated = await generateReply({ context, messages }); }
     catch { generated = { text: "Maaf, asisten sedang mengalami gangguan. Silakan coba lagi sebentar lagi.", provider: "error-fallback" }; }
     await db.from("messages").insert({ tenant_id: tenant.id, conversation_id: conversation.id, role: "assistant", content: generated.text, metadata: { provider: generated.provider } });
-    if (generated.provider === "error-fallback") await db.from("conversations").update({ status: "needs_human" }).eq("id", conversation.id);
+    if (generated.provider === "error-fallback") {
+      await db.from("conversations").update({ status: "needs_human" }).eq("id", conversation.id);
+      await db.from("conversation_events").insert({ tenant_id: tenant.id, conversation_id: conversation.id, event_type: "ai_error", metadata: { provider: generated.provider } });
+    }
     return NextResponse.json({ reply: generated.text, provider: generated.provider, remaining: usage.remaining });
   } catch (error) {
     console.error("chat_api_error", error instanceof Error ? error.message : "unknown");

@@ -15,6 +15,9 @@ export const demoBusiness: BusinessContext = {
     handoff_whatsapp: "6281234567890",
     lead_capture_enabled: true,
     quick_questions: ["Apa saja produknya?", "Berapa harganya?", "Jam buka kapan?"],
+    allow_public_widget: true,
+    billing_cycle_start: "2026-09-01",
+    channel_config: { web: { enabled: true }, whatsapp: { enabled: false } },
   },
   faqs: [
     { id: "f1", question: "Jam buka?", answer: "Setiap hari pukul 08.00–22.00 WIB.", sort_order: 1 },

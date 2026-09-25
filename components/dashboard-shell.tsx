@@ -2,15 +2,16 @@ import Link from "next/link";
 import { Bell, BookOpen, Box, HelpCircle, LayoutDashboard, LogOut, MessageSquareText, Settings, Store, UserRound } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { initials } from "@/lib/utils";
+import { usagePercent } from "@/lib/plans";
 import type { Tenant } from "@/lib/types";
 import { signOut } from "@/app/dashboard/actions";
 
 const links = [
-  ["Ringkasan", "/dashboard#ringkasan", LayoutDashboard], ["Profil bisnis", "/dashboard#profil", Store], ["FAQ", "/dashboard#faq", HelpCircle], ["Produk", "/dashboard#produk", Box], ["Knowledge", "/dashboard#knowledge", BookOpen], ["Percakapan", "/dashboard#percakapan", MessageSquareText], ["Pengaturan", "/dashboard#pengaturan", Settings],
+  ["Ringkasan", "/dashboard#ringkasan", LayoutDashboard], ["Profil bisnis", "/dashboard#profil", Store], ["FAQ", "/dashboard#faq", HelpCircle], ["Produk", "/dashboard#produk", Box], ["Knowledge", "/dashboard#knowledge", BookOpen], ["Percakapan", "/dashboard#percakapan", MessageSquareText], ["Paket", "/dashboard#paket", LayoutDashboard], ["Pengaturan", "/dashboard#pengaturan", Settings],
 ] as const;
 
 export function DashboardShell({ tenant, usage, children }: { tenant: Tenant; usage: number; children: React.ReactNode }) {
-  const percent = Math.min(100, Math.round((usage / tenant.monthly_limit) * 100));
+  const percent = usagePercent(usage, tenant.monthly_limit);
   return <div className="dashboard">
     <aside className="sidebar"><Brand />
       <div className="workspace"><span className="workspace-avatar">{initials(tenant.name)}</span><div><strong>{tenant.name}</strong><span>{tenant.plan} workspace</span></div></div>
