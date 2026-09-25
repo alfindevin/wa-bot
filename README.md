@@ -1,6 +1,6 @@
 # LanturAI — MVP chatbot AI multi-tenant
 
-MVP SaaS chatbot untuk banyak bisnis, dibuat dengan Next.js, Supabase, Vercel, dan Gemini API. Aplikasi bisa langsung dijalankan dalam **demo mode tanpa akun atau API key**. Setelah Supabase dihubungkan, autentikasi, penyimpanan, RLS, histori, dan kuota tenant akan aktif.
+MVP SaaS chatbot untuk banyak bisnis, dibuat dengan Next.js, Supabase, Vercel, dan Groq API. Aplikasi bisa langsung dijalankan dalam **demo mode tanpa akun atau API key**. Setelah Supabase dihubungkan, autentikasi, penyimpanan, RLS, histori, dan kuota tenant akan aktif.
 
 ## Fitur
 
@@ -17,7 +17,7 @@ MVP SaaS chatbot untuk banyak bisnis, dibuat dengan Next.js, Supabase, Vercel, d
 - Pengaturan nama bot, gaya bahasa, warna, dan pertanyaan cepat
 - Rate limit berbasis hash untuk mencegah spam
 - Kuota pesan bulanan atomik per tenant
-- Gemini API opsional; fallback berbasis knowledge tetap bekerja tanpa AI key
+- Groq API opsional; fallback berbasis knowledge tetap bekerja tanpa AI key
 - Channel model (`web`, `whatsapp`, `api`) agar mudah ditambah WhatsApp Cloud API
 - Demo mode tanpa database untuk presentasi awal
 
@@ -55,17 +55,17 @@ NEXT_PUBLIC_DEMO_MODE=false
 
 `SUPABASE_SECRET_KEY` hanya boleh dipakai di server. Jangan mengubah namanya menjadi `NEXT_PUBLIC_*` dan jangan commit `.env.local`.
 
-## Setup Gemini API (opsional, free tier bila tersedia)
+## Setup Groq API (opsional, free tier bila tersedia)
 
-1. Buat API key di [Google AI Studio](https://aistudio.google.com/apikey).
+1. Buat API key di [Groq Console](https://console.groq.com/keys).
 2. Tambahkan ke `.env.local`:
 
 ```dotenv
-GEMINI_API_KEY=xxxxx
-GEMINI_MODEL=gemini-2.5-flash-lite
+GROQ_API_KEY=xxxxx
+GROQ_MODEL=llama-3.1-8b-instant
 ```
 
-Tanpa key, aplikasi tetap runnable dan menjawab dengan pencarian sederhana dari FAQ/produk. Ketersediaan model dan batas free tier ditentukan oleh Google dan dapat berubah. Jangan gunakan data pelanggan sensitif pada provider free tier tanpa meninjau ketentuan pemrosesan datanya.
+Tanpa key, aplikasi tetap runnable dan menjawab dengan pencarian sederhana dari FAQ/produk. Ketersediaan model dan batas free tier ditentukan oleh Groq dan dapat berubah. Jangan gunakan data pelanggan sensitif pada provider free tier tanpa meninjau ketentuan pemrosesan datanya.
 
 ## Verifikasi lokal
 
@@ -125,7 +125,7 @@ Browser customer
                      ├─ validasi tenant + kuota atomik
                      ├─ simpan user message
                      ├─ rakit context bisnis
-                     ├─ Gemini/local fallback
+                     ├─ Groq/local fallback
                      └─ simpan assistant message
 
 Browser admin
@@ -163,7 +163,7 @@ app/
   dashboard/            admin + server actions
   login/ onboarding/    auth dan pembuatan tenant
 lib/
-  ai/provider.ts        adapter Gemini/fallback
+  ai/provider.ts        adapter Groq/fallback
   supabase/             browser, server, admin clients
 supabase/migrations/    schema, RLS, index, fungsi kuota
 ```
