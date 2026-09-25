@@ -10,6 +10,11 @@ export const demoBusiness: BusinessContext = {
     brand_color: "#6D5DFB",
     monthly_limit: 500,
     plan: "Starter",
+    bot_name: "Nara",
+    bot_tone: "friendly",
+    handoff_whatsapp: "6281234567890",
+    lead_capture_enabled: true,
+    quick_questions: ["Apa saja produknya?", "Berapa harganya?", "Jam buka kapan?"],
   },
   faqs: [
     { id: "f1", question: "Jam buka?", answer: "Setiap hari pukul 08.00–22.00 WIB.", sort_order: 1 },

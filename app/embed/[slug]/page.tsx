@@ -5,12 +5,9 @@ import { demoBusiness } from "@/lib/demo-data";
 import { hasSupabaseServerEnv, isDemoMode } from "@/lib/env";
 import type { Tenant } from "@/lib/types";
 
-export async function generateMetadata({ params }: { params: Promise<{slug:string}> }) {
-  const { slug } = await params;
-  return { title: slug === "demo" ? "Chat dengan Kopi Senandika" : "Customer Service AI" };
-}
+export const metadata = { title: "Chatbot" };
 
-export default async function ChatPage({ params }: { params: Promise<{slug:string}> }) {
+export default async function EmbeddedChatPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   let tenant: Tenant | null = null;
   if (isDemoMode && (!hasSupabaseServerEnv || slug === "demo")) tenant = demoBusiness.tenant;
@@ -20,5 +17,5 @@ export default async function ChatPage({ params }: { params: Promise<{slug:strin
     tenant = data;
   }
   if (!tenant) notFound();
-  return <main className="chat-page"><ChatWidget tenant={tenant}/></main>;
+  return <main className="embed-page"><ChatWidget tenant={tenant}/></main>;
 }

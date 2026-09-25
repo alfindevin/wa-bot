@@ -9,6 +9,13 @@ MVP SaaS chatbot untuk banyak bisnis, dibuat dengan Next.js, Supabase, Vercel, d
 - Supabase Auth (email/password) dengan sesi berbasis cookie
 - Multi-tenant: semua data memiliki `tenant_id` dan dilindungi RLS
 - Histori percakapan dan pesan
+- Detail isi percakapan, status penanganan, dan data lead
+- Lead capture opsional (nama, WhatsApp, email)
+- Handoff dari AI ke WhatsApp admin
+- Analytics pertanyaan populer, leads, dan chat yang perlu ditangani
+- Floating widget yang dapat dipasang di website customer dengan satu tag `<script>`
+- Pengaturan nama bot, gaya bahasa, warna, dan pertanyaan cepat
+- Rate limit berbasis hash untuk mencegah spam
 - Kuota pesan bulanan atomik per tenant
 - Gemini API opsional; fallback berbasis knowledge tetap bekerja tanpa AI key
 - Channel model (`web`, `whatsapp`, `api`) agar mudah ditambah WhatsApp Cloud API
@@ -29,7 +36,7 @@ Buka `http://localhost:3000`. Dengan `NEXT_PUBLIC_DEMO_MODE=true`, dashboard dem
 ## Setup Supabase Free
 
 1. Buat project gratis di [Supabase](https://database.new/).
-2. Buka **SQL Editor**, salin seluruh isi file migration di `supabase/migrations/`, lalu jalankan sekali.
+2. Buka **SQL Editor**, jalankan file di `supabase/migrations/` sesuai urutan nama file. Jika schema awal sudah pernah dipasang, cukup jalankan migration `selling_features`.
 3. Di **Authentication → Providers → Email**, aktifkan Email. Untuk demo cepat, Anda dapat menonaktifkan email confirmation; untuk publik sebaiknya tetap aktif.
 4. Di **Authentication → URL Configuration** isi:
    - Site URL lokal: `http://localhost:3000`
@@ -76,6 +83,28 @@ Alur tes:
 3. Isi profil, FAQ, produk, dan knowledge di `/dashboard`.
 4. Buka link `/c/slug-bisnis`, kirim pesan, lalu cek histori/usage di dashboard.
 5. Buat akun kedua dan pastikan akun itu tidak bisa membaca data tenant pertama.
+
+## Memasang widget di website customer
+
+Salin kode dari bagian **Dashboard → Publikasi & integrasi**, lalu tempel sebelum `</body>`:
+
+```html
+<script
+  src="https://DOMAIN-ANDA.vercel.app/widget.js"
+  data-tenant="slug-bisnis"
+  defer
+></script>
+```
+
+Opsi tambahan:
+
+```html
+data-position="left"
+data-color="#6D5DFB"
+data-label="Tanya kami di sini"
+```
+
+Website dengan Content Security Policy ketat perlu mengizinkan domain deployment pada `script-src` dan `frame-src`.
 
 ## Deploy Vercel Free
 
@@ -129,6 +158,8 @@ Tahap berikutnya adalah menambah `app/api/webhooks/whatsapp/route.ts`, verifikas
 app/
   api/chat/             endpoint customer
   c/[slug]/             web chatbot publik
+  embed/[slug]/         tampilan iframe widget
+  widget.js/            script embed lintas website
   dashboard/            admin + server actions
   login/ onboarding/    auth dan pembuatan tenant
 lib/

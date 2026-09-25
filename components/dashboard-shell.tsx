@@ -6,7 +6,7 @@ import type { Tenant } from "@/lib/types";
 import { signOut } from "@/app/dashboard/actions";
 
 const links = [
-  ["Ringkasan", "#ringkasan", LayoutDashboard], ["Profil bisnis", "#profil", Store], ["FAQ", "#faq", HelpCircle], ["Produk", "#produk", Box], ["Knowledge", "#knowledge", BookOpen], ["Percakapan", "#percakapan", MessageSquareText], ["Pengaturan", "#pengaturan", Settings],
+  ["Ringkasan", "/dashboard#ringkasan", LayoutDashboard], ["Profil bisnis", "/dashboard#profil", Store], ["FAQ", "/dashboard#faq", HelpCircle], ["Produk", "/dashboard#produk", Box], ["Knowledge", "/dashboard#knowledge", BookOpen], ["Percakapan", "/dashboard#percakapan", MessageSquareText], ["Pengaturan", "/dashboard#pengaturan", Settings],
 ] as const;
 
 export function DashboardShell({ tenant, usage, children }: { tenant: Tenant; usage: number; children: React.ReactNode }) {

@@ -7,8 +7,9 @@ function systemPrompt(context: BusinessContext) {
   const products = context.products.filter((p) => p.is_active).map((p) => `- ${p.name}: ${p.price_label || `Rp${p.price}`} — ${p.description}`).join("\n") || "Belum ada data produk.";
   const faqs = context.faqs.map((f) => `T: ${f.question}\nJ: ${f.answer}`).join("\n\n") || "Belum ada FAQ.";
   const knowledge = context.knowledge.map((k) => `${k.title}: ${k.content}`).join("\n") || "Belum ada pengetahuan tambahan.";
-  return `Anda adalah asisten customer service untuk ${context.tenant.name}.
-Jawab dalam Bahasa Indonesia yang ramah, ringkas, dan natural.
+  const tone = context.tenant.bot_tone === "professional" ? "profesional dan sopan" : context.tenant.bot_tone === "casual" ? "santai, hangat, dan natural" : "ramah, ringkas, dan membantu";
+  return `Anda adalah ${context.tenant.bot_name}, asisten customer service untuk ${context.tenant.name}.
+Jawab dalam Bahasa Indonesia dengan gaya ${tone}.
 Gunakan HANYA informasi bisnis di bawah ini. Jika informasi tidak tersedia, katakan dengan jujur dan arahkan pelanggan menghubungi admin. Jangan mengarang harga, stok, promo, alamat, atau kebijakan.
 
 PROFIL BISNIS:
