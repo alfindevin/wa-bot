@@ -66,7 +66,7 @@ export default function Home() {
         </section>
         <section className="section" id="harga"><div className="container"><div className="cta-card"><div><h2>Mulai dengan Rp0. Validasi dulu, scale kemudian.</h2><p>Free-tier friendly untuk demo, UMKM awal, dan mendapatkan pelanggan pertama.</p></div><Link href="/dashboard" className="button button-secondary button-lg">Mulai sekarang <ArrowRight size={17}/></Link></div></div></section>
       </main>
-      <footer className="footer"><div className="container footer-inner"><Brand /><span>© 2026 LanturAI. MVP chatbot multi-tenant.</span><span><Link href="/privacy">Privasi</Link> · Next.js · Supabase · Gemini</span></div></footer>
+      <footer className="footer"><div className="container footer-inner"><Brand /><span>© 2026 LanturAI. MVP chatbot multi-tenant.</span><span><Link href="/privacy">Privasi</Link> · Next.js · Supabase · Groq</span></div></footer>
     </>
   );
 }
