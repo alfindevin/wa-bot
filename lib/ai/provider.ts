@@ -1,0 +1,58 @@
+import "server-only";
+import type { BusinessContext, ChatMessage } from "@/lib/types";
+
+type GenerateInput = { context: BusinessContext; messages: ChatMessage[] };
+
+function systemPrompt(context: BusinessContext) {
+  const products = context.products.filter((p) => p.is_active).map((p) => `- ${p.name}: ${p.price_label || `Rp${p.price}`} — ${p.description}`).join("\n") || "Belum ada data produk.";
+  const faqs = context.faqs.map((f) => `T: ${f.question}\nJ: ${f.answer}`).join("\n\n") || "Belum ada FAQ.";
+  const knowledge = context.knowledge.map((k) => `${k.title}: ${k.content}`).join("\n") || "Belum ada pengetahuan tambahan.";
+  return `Anda adalah asisten customer service untuk ${context.tenant.name}.
+Jawab dalam Bahasa Indonesia yang ramah, ringkas, dan natural.
+Gunakan HANYA informasi bisnis di bawah ini. Jika informasi tidak tersedia, katakan dengan jujur dan arahkan pelanggan menghubungi admin. Jangan mengarang harga, stok, promo, alamat, atau kebijakan.
+
+PROFIL BISNIS:
+${context.tenant.business_profile}
+
+PRODUK:
+${products}
+
+FAQ:
+${faqs}
+
+PENGETAHUAN TAMBAHAN:
+${knowledge}`;
+}
+
+function localResponse({ context, messages }: GenerateInput) {
+  const question = messages.at(-1)?.content.toLowerCase() || "";
+  const faq = context.faqs.find((f) => question.split(/\s+/).some((word) => word.length > 3 && f.question.toLowerCase().includes(word)));
+  if (faq) return faq.answer;
+  const product = context.products.find((p) => question.includes(p.name.toLowerCase()) || p.name.toLowerCase().split(" ").some((word) => word.length > 3 && question.includes(word)));
+  if (product) return `${product.name} tersedia dengan harga ${product.price_label || `Rp${product.price.toLocaleString("id-ID")}`}. ${product.description || ""}`.trim();
+  if (/menu|produk|harga|jual|tersedia/.test(question)) {
+    return `Produk yang tersedia:\n${context.products.filter(p=>p.is_active).map(p=>`• ${p.name} — ${p.price_label || `Rp${p.price.toLocaleString("id-ID")}`}`).join("\n")}\n\nMau tahu detail produk yang mana?`;
+  }
+  return `Terima kasih sudah menghubungi ${context.tenant.name}. Informasi itu belum ada di basis pengetahuan kami. Silakan hubungi admin untuk jawaban yang lebih tepat, ya.`;
+}
+
+export async function generateReply(input: GenerateInput) {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return { text: localResponse(input), provider: "local-fallback" };
+  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt(input.context) }] },
+      contents: input.messages.slice(-10).map((message) => ({ role: message.role === "assistant" ? "model" : "user", parts: [{ text: message.content }] })),
+      generationConfig: { temperature: 0.25, maxOutputTokens: 350 },
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!response.ok) throw new Error(`AI provider error (${response.status})`);
+  const json = await response.json();
+  const text = json.candidates?.[0]?.content?.parts?.map((part: {text?:string}) => part.text || "").join("").trim();
+  if (!text) throw new Error("AI provider tidak mengembalikan jawaban.");
+  return { text, provider: `gemini:${model}` };
+}
