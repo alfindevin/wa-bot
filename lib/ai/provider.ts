@@ -38,6 +38,30 @@ function localResponse({ context, messages }: GenerateInput) {
 }
 
 export async function generateReply(input: GenerateInput) {
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    const model = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt(input.context) },
+          ...input.messages.slice(-10).map((message) => ({ role: message.role, content: message.content })),
+        ],
+        temperature: 0.25,
+        max_tokens: 350,
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!response.ok) throw new Error(`AI provider error (${response.status})`);
+    const json = await response.json();
+    const text = json.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error("AI provider tidak mengembalikan jawaban.");
+    return { text, provider: `groq:${model}` };
+  }
+
   const key = process.env.GEMINI_API_KEY;
   if (!key) return { text: localResponse(input), provider: "local-fallback" };
   const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
