@@ -67,7 +67,7 @@ Jika dashboard Supabase Anda masih menampilkan **anon public key** dan bukan **p
 
 ```dotenv
 GROQ_API_KEY=xxxxx
-GROQ_MODEL=llama-3.1-8b-instant
+GROQ_MODEL=openai/gpt-oss-20b
 ```
 
 Tanpa key, aplikasi tetap runnable dan menjawab dengan pencarian sederhana dari FAQ/produk. Ketersediaan model dan batas free tier ditentukan oleh Groq dan dapat berubah. Jangan gunakan data pelanggan sensitif pada provider free tier tanpa meninjau ketentuan pemrosesan datanya.

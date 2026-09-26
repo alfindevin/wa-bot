@@ -37,47 +37,33 @@ function localResponse({ context, messages }: GenerateInput) {
   return `Terima kasih sudah menghubungi ${context.tenant.name}. Informasi itu belum ada di basis pengetahuan kami. Silakan hubungi admin untuk jawaban yang lebih tepat, ya.`;
 }
 
-export async function generateReply(input: GenerateInput) {
-  const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey) {
-    const model = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt(input.context) },
-          ...input.messages.slice(-10).map((message) => ({ role: message.role, content: message.content })),
-        ],
-        temperature: 0.25,
-        max_tokens: 350,
-      }),
-      signal: AbortSignal.timeout(20000),
-    });
-    if (!response.ok) throw new Error(`AI provider error (${response.status})`);
-    const json = await response.json();
-    const text = json.choices?.[0]?.message?.content?.trim();
-    if (!text) throw new Error("AI provider tidak mengembalikan jawaban.");
-    return { text, provider: `groq:${model}` };
-  }
+const DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b";
 
-  const key = process.env.GEMINI_API_KEY;
+export async function generateReply(input: GenerateInput) {
+  const key = process.env.GROQ_API_KEY;
   if (!key) return { text: localResponse(input), provider: "local-fallback" };
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+  const model = process.env.GROQ_MODEL || DEFAULT_GROQ_MODEL;
+  // GPT-OSS models reason before answering; keep reasoning short and out of the reply.
+  const isReasoningModel = model.startsWith("openai/gpt-oss");
+  const reasoning = isReasoningModel ? { reasoning_effort: "low", include_reasoning: false } : {};
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt(input.context) }] },
-      contents: input.messages.slice(-10).map((message) => ({ role: message.role === "assistant" ? "model" : "user", parts: [{ text: message.content }] })),
-      generationConfig: { temperature: 0.25, maxOutputTokens: 350 },
+      model,
+      messages: [
+        { role: "system", content: systemPrompt(input.context) },
+        ...input.messages.slice(-10).map((message) => ({ role: message.role, content: message.content })),
+      ],
+      temperature: 0.25,
+      max_completion_tokens: isReasoningModel ? 800 : 350,
+      ...reasoning,
     }),
     signal: AbortSignal.timeout(20000),
   });
   if (!response.ok) throw new Error(`AI provider error (${response.status})`);
   const json = await response.json();
-  const text = json.candidates?.[0]?.content?.parts?.map((part: {text?:string}) => part.text || "").join("").trim();
+  const text = json.choices?.[0]?.message?.content?.trim();
   if (!text) throw new Error("AI provider tidak mengembalikan jawaban.");
-  return { text, provider: `gemini:${model}` };
+  return { text, provider: `groq:${model}` };
 }
